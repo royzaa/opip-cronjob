@@ -26,7 +26,8 @@ export class CronSchedueService {
       stock: product?.stock?.toString(),
       linkType: product?.spuId?.toString(),
     });
-
+      
+    console.log('success')
   }
 
   private async getAllRefurbishedVivoProduct() {
