@@ -59,5 +59,5 @@ jobs:
             echo "BREVO_API_KEY=${{ secrets.BREVO_API_KEY  }}" > nest-env
             docker stop simpedas-dev-http &&
             docker pull ${{ env.DOCKER_IMAGE_TAG }}
-            docker run -d -p 80:8000 --name simpedas-dev-http --rm --env-file=./nest-env ${{ env.DOCKER_IMAGE_TAG }}
+            docker run -d -p 80:3000 --name simpedas-dev-http --rm --env-file=./nest-env ${{ env.DOCKER_IMAGE_TAG }}
           '
