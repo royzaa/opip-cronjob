@@ -1,0 +1,63 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main, development]
+
+env:
+  CLUSTER: bot-oviv
+  USERNAME: royzaa
+  IMAGE: bot-oviv
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set ENV
+        run: |
+          echo "GIT_BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          echo "DOCKER_IMAGE_TAG=ghcr.io/${{ env.USERNAME }}/${{ env.IMAGE }}:${{ github.sha }}" >> $GITHUB_ENV
+
+      - name: Build Docker Image
+        run: |
+          docker build -t ${{ env.DOCKER_IMAGE_TAG }} .
+
+      - name: Login to Docker Regitry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Push Docker Image
+        run: |
+          docker push ${{ env.DOCKER_IMAGE_TAG }}
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set ENV
+        run: |
+          echo "GIT_BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          echo "DOCKER_IMAGE_TAG=ghcr.io/${{ env.USERNAME }}/${{ env.IMAGE }}:${{ github.sha }}" >> $GITHUB_ENV
+      - name: Deploy in DO droplet
+        env:
+          PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY  }}
+          HOSTNAME: ${{ secrets.HOST  }}
+          USER_NAME: ${{ secrets.USER  }}
+
+        run: |
+          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+          ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${HOSTNAME} '
+
+            # access of Droplet and start the deploy .
+            cd /home/app &&
+            echo "BREVO_API_KEY=${{ secrets.BREVO_API_KEY  }}" > nest-env
+            docker stop simpedas-dev-http &&
+            docker pull ${{ env.DOCKER_IMAGE_TAG }}
+            docker run -d -p 80:8000 --name simpedas-dev-http --rm --env-file=./nest-env ${{ env.DOCKER_IMAGE_TAG }}
+          '
