@@ -18,7 +18,7 @@ export class CronSchedueService {
     const data = await this.getAllRefurbishedVivoProduct();
     const patternRegex = new RegExp(/\b(?:X80|X90|X70)\b/);
 
-    const product = data.data.result.find(e => e.shortName.match(patternRegex));
+    const product = data.data.result.find(e => e?.shortName?.match(patternRegex) && e?.stock > 0);
 
     if (product != null) await this.mailService.sendMailSuccess({
       model: product?.shortName?.toString(),
